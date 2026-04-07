@@ -64,7 +64,7 @@ const SlotMachine: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [autoSpin, setAutoSpin] = useState(false);
   const animationRef = useRef<number | undefined>(undefined);
-  const audioContextRef = useRef<AudioContext | undefined>(undefined);
+
 
   // Initialize reels
   useEffect(() => {
@@ -72,11 +72,6 @@ const SlotMachine: React.FC = () => {
       Array(20).fill(null).map(() => getRandomSymbol()) // More symbols for scrolling
     );
     setReels(initialReels);
-  }, []);
-
-  // Initialize audio context
-  useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
   }, []);
 
   const getRandomSymbol = () => {
@@ -175,19 +170,21 @@ const SlotMachine: React.FC = () => {
           setWinMessage(messages[Math.floor(Math.random() * messages.length)]);
           createParticles(totalWin > bet * 10); // Big win particles
           shakeScreen(totalWin > bet * 20);
-          playSound('win');
+          // playSound('win');
         }
 
-        // Chance for jackpot (1 in 1000)
-        if (Math.random() < 0.001) {
-          setLastWin(prev => prev + jackpot);
-          setBalance(prev => prev + jackpot);
-          setJackpot(1000); // Reset
-          setWinMessage("JACKPOT! Booted the pig!");
-          createParticles(true);
-          shakeScreen(true);
-          playSound('jackpot');
-        }
+      // Chance for jackpot (1 in 1000)
+      if (Math.random() < 0.001) {
+        setLastWin(prev => prev + jackpot);
+        setBalance(prev => prev + jackpot);
+        setJackpot(1000); // Reset
+        setWinMessage("JACKPOT! Booted the pig!");
+        createParticles(true);
+        shakeScreen(true);
+        // playSound('jackpot');
+      } else if (totalWin > 0) {
+        // playSound('win');
+      }
 
         // If free spins, trigger another spin
         if (freeSpins > 0) {
@@ -207,8 +204,7 @@ const SlotMachine: React.FC = () => {
     setIsSpinning(true);
     setWinningLines([]);
     setLastWin(0);
-    setWinMessage('');
-    playSound('spin');
+    // playSound('spin');
 
     // Deduct bet
     setBalance(prev => prev - bet);
@@ -263,43 +259,7 @@ const SlotMachine: React.FC = () => {
     }, isBigWin ? 500 : 200);
   };
 
-  // Web Audio API for sounds
-  const playSound = (type: string) => {
-    if (!audioContextRef.current) return;
 
-    const ctx = audioContextRef.current;
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    switch (type) {
-      case 'spin':
-        oscillator.frequency.setValueAtTime(440, ctx.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-        oscillator.start(ctx.currentTime);
-        oscillator.stop(ctx.currentTime + 0.5);
-        break;
-      case 'win':
-        oscillator.frequency.setValueAtTime(523, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.3);
-        break;
-      case 'jackpot':
-        oscillator.frequency.setValueAtTime(659, ctx.currentTime);
-        oscillator.frequency.setValueAtTime(784, ctx.currentTime + 0.2);
-        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.8);
-        break;
-    }
-  };
 
   // Canvas drawing
   useEffect(() => {
