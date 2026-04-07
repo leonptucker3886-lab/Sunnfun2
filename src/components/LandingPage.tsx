@@ -51,13 +51,7 @@ const LandingPage: React.FC = () => {
   }, []);
 
   const enterSite = () => {
-    const pLand = document.getElementById('p-land');
-    const pAbout = document.getElementById('p-about');
-    if (pLand && pAbout) {
-      pLand.classList.remove('active');
-      setTimeout(() => pAbout.classList.add('active'), 80);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    window.location.href = '/slots';
   };
 
   const goBack = () => {
