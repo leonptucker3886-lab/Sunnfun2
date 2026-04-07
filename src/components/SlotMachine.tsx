@@ -223,11 +223,13 @@ const SlotMachine: React.FC = () => {
 
   // Particle system
   const createParticles = (isBigWin: boolean) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     const newParticles: Particle[] = [];
     for (let i = 0; i < (isBigWin ? 50 : 20); i++) {
       newParticles.push({
-        x: Math.random() * 500,
-        y: 150,
+        x: Math.random() * canvas.width,
+        y: canvas.height / 2,
         vx: (Math.random() - 0.5) * 10,
         vy: Math.random() * -10 - 5,
         life: 0,
@@ -261,12 +263,30 @@ const SlotMachine: React.FC = () => {
 
 
 
+  // Set canvas size responsively
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const resizeCanvas = () => {
+      const maxWidth = Math.min(window.innerWidth - 40, 500); // Max 500px, with padding
+      const aspectRatio = 300 / 500;
+      canvas.width = maxWidth;
+      canvas.height = maxWidth * aspectRatio;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
   // Canvas drawing
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const scaleX = canvas.width / 500;
+    const scaleY = canvas.height / 300;
 
     const draw = (timestamp?: number) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -275,21 +295,21 @@ const SlotMachine: React.FC = () => {
       reels.forEach((reel, reelIndex) => {
         const offset = reelPositions[reelIndex];
         for (let i = 0; i < 3; i++) {
-          const symbolIndex = Math.floor(offset / 100) + i;
+          const symbolIndex = Math.floor(offset / (100 * scaleY)) + i;
           const symbol = reel[symbolIndex % reel.length];
-          const y = i * 100 - (offset % 100) + 50;
-          ctx.font = '48px Arial';
+          const y = i * (100 * scaleY) - (offset % (100 * scaleY)) + (50 * scaleY);
+          ctx.font = `${48 * scaleY}px Arial`;
           ctx.textAlign = 'center';
-          ctx.fillText(symbol, reelIndex * 100 + 50, y);
+          ctx.fillText(symbol, reelIndex * (100 * scaleX) + (50 * scaleX), y);
         }
       });
 
-      // Draw particles
+      // Draw particles (scale positions)
       particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = 1 - (p.life / p.maxLife);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x * scaleX, p.y * scaleY, p.size * Math.min(scaleX, scaleY), 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
       });
@@ -308,11 +328,11 @@ const SlotMachine: React.FC = () => {
         payline.forEach(index => {
           const reelIndex = Math.floor(index / 3);
           const rowIndex = index % 3;
-          const x = reelIndex * 100 + 50;
-          const y = rowIndex * 100 + 50;
+          const x = reelIndex * (100 * scaleX) + (50 * scaleX);
+          const y = rowIndex * (100 * scaleY) + (50 * scaleY);
           ctx.strokeStyle = 'yellow';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(x - 25, y - 25, 50, 50);
+          ctx.lineWidth = 3 * Math.min(scaleX, scaleY);
+          ctx.strokeRect(x - (25 * scaleX), y - (25 * scaleY), 50 * scaleX, 50 * scaleY);
         });
       });
     }
@@ -344,17 +364,17 @@ const SlotMachine: React.FC = () => {
   }, [spin]);
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center min-h-screen bg-gradient-to-b from-blue-200 to-green-200 p-4">
-      <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">Sun N Fun Slots - Kick the Pig Edition</h1>
+    <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-blue-200 to-green-200 p-2 sm:p-4">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center">Sun N Fun Slots - Kick the Pig Edition</h1>
 
-      <div className="mb-4 flex flex-wrap justify-center space-x-4 text-lg">
+      <div className="mb-4 flex flex-wrap justify-center gap-2 sm:gap-4 text-sm sm:text-lg">
         <div>Balance: {balance} coins</div>
         <div>Bet: {bet}</div>
         <div>Jackpot: {jackpot} coins</div>
         <div>Free Spins: {freeSpins}</div>
       </div>
 
-      <canvas ref={canvasRef} width={500} height={300} className="border-4 border-yellow-400 rounded-lg mb-4 shadow-lg" />
+      <canvas ref={canvasRef} className="border-4 border-yellow-400 rounded-lg mb-4 shadow-lg w-full max-w-md mx-auto" />
 
       {winMessage && (
         <div className="text-2xl font-bold text-yellow-600 mb-2 animate-bounce">
@@ -366,46 +386,46 @@ const SlotMachine: React.FC = () => {
         <button
           onClick={spin}
           disabled={isSpinning}
-          className="bg-red-600 hover:bg-red-700 text-white px-12 py-6 text-3xl rounded-full disabled:opacity-50 shadow-lg transition-transform hover:scale-105"
+          className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 sm:px-12 sm:py-6 text-2xl sm:text-3xl rounded-full disabled:opacity-50 shadow-lg transition-transform hover:scale-105"
         >
           {isSpinning ? '🎰' : 'SPIN!'}
         </button>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <button
             onClick={() => setAutoSpin(!autoSpin)}
-            className={`px-4 py-2 rounded ${autoSpin ? 'bg-green-500' : 'bg-gray-500'} text-white`}
+            className={`px-3 py-2 sm:px-4 rounded text-sm sm:text-base ${autoSpin ? 'bg-green-500' : 'bg-gray-500'} text-white`}
           >
             Auto-Spin {autoSpin ? 'ON' : 'OFF'}
           </button>
         </div>
       </div>
 
-      <div className="mb-4 flex items-center space-x-4">
-        <button onClick={() => setBet(Math.max(1, bet - 1))} className="px-3 py-1 bg-gray-300 rounded">-</button>
-        <span className="text-xl">Bet: {bet}</span>
-        <button onClick={() => setBet(Math.min(10, bet + 1))} className="px-3 py-1 bg-gray-300 rounded">+</button>
+      <div className="mb-4 flex items-center space-x-2 sm:space-x-4">
+        <button onClick={() => setBet(Math.max(1, bet - 1))} className="px-2 py-1 sm:px-3 bg-gray-300 rounded">-</button>
+        <span className="text-lg sm:text-xl">Bet: {bet}</span>
+        <button onClick={() => setBet(Math.min(10, bet + 1))} className="px-2 py-1 sm:px-3 bg-gray-300 rounded">+</button>
       </div>
 
-      <div className="text-xl mb-4">Last Win: {lastWin} coins</div>
+      <div className="text-lg sm:text-xl mb-4">Last Win: {lastWin} coins</div>
 
-      <div className="mb-4">
-        <h3 className="text-lg mb-2">Spin History:</h3>
-        <div className="flex space-x-2">
+      <div className="mb-4 w-full max-w-xs sm:max-w-sm">
+        <h3 className="text-base sm:text-lg mb-2">Spin History:</h3>
+        <div className="flex flex-wrap gap-1 sm:gap-2">
           {spinHistory.map((win, index) => (
-            <div key={index} className="px-2 py-1 bg-gray-100 rounded">{win}</div>
+            <div key={index} className="px-2 py-1 bg-gray-100 rounded text-sm">{win}</div>
           ))}
         </div>
       </div>
 
-      <button onClick={() => setShowHowToPlay(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
+      <button onClick={() => setShowHowToPlay(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 sm:px-4 rounded shadow text-sm sm:text-base">
         How to Play
       </button>
 
       {showHowToPlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
-          <div className="bg-white p-6 rounded-lg max-w-md max-h-96 overflow-y-auto">
-            <h2 className="text-2xl mb-4">How to Play Sun N Fun Slots</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg max-w-sm sm:max-w-md max-h-96 overflow-y-auto">
+            <h2 className="text-xl sm:text-2xl mb-4">How to Play Sun N Fun Slots</h2>
             <ul className="space-y-2 text-sm">
               <li>🐷 Pig: High value symbol</li>
               <li>🍺 Beer: Medium value</li>
@@ -415,7 +435,7 @@ const SlotMachine: React.FC = () => {
               <li>🥾 Wild: Multiplies wins</li>
               <li>⭐ Scatter: Free spins</li>
             </ul>
-            <p className="mt-4">Match 3+ on paylines. Wilds substitute. 3+ scatters = 10 free spins. Swipe up or tap spin!</p>
+            <p className="mt-4 text-sm">Match 3+ on paylines. Wilds substitute. 3+ scatters = 10 free spins. Swipe up or tap spin!</p>
             <button onClick={() => setShowHowToPlay(false)} className="mt-4 bg-red-500 text-white px-4 py-2 rounded">
               Got it!
             </button>
