@@ -63,8 +63,8 @@ const SlotMachine: React.FC = () => {
   const [winMessage, setWinMessage] = useState('');
   const [particles, setParticles] = useState<Particle[]>([]);
   const [autoSpin, setAutoSpin] = useState(false);
-  const animationRef = useRef<number>();
-  const audioContextRef = useRef<AudioContext>();
+  const animationRef = useRef<number | undefined>(undefined);
+  const audioContextRef = useRef<AudioContext | undefined>(undefined);
 
   // Initialize reels
   useEffect(() => {
