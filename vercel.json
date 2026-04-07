@@ -1,0 +1,6 @@
+{
+  "env": {
+    "DB_URL": "file:./dev.db",
+    "DB_TOKEN": "dummy-token"
+  }
+}
